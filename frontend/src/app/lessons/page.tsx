@@ -82,8 +82,8 @@ const ListView = () => {
 
 const CalendarView = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
-  
-  const events = useMemo(() => {
+
+  const calculateEvents = () => {
     const weekStart = startOfWeek(currentDate)
     return lessons.map(lesson => {
       const dayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(lesson.day)
@@ -113,7 +113,9 @@ const CalendarView = () => {
         end,
       }
     })
-  }, [currentDate])
+  }
+
+  const events = useMemo(calculateEvents, [currentDate])
 
   const handleNavigate = (newDate: Date, view: View, action: NavigateAction) => {
     setCurrentDate(newDate)

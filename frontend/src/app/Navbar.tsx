@@ -10,19 +10,19 @@ const Navbar = () => {
         {/* Center: the main links */}
         <div className="flex gap-10 justify-center">
           <Link 
-            href="/" 
+            href="/messages" 
             className="text-black text-lg transition-transform hover:scale-110"
           >
             Messages
           </Link>
           <Link 
-            href="/" 
+            href="/students" 
             className="text-black text-lg transition-transform hover:scale-110"
           >
             Students
           </Link>
           <Link 
-            href="/" 
+            href="/lessons" 
             className="text-black text-lg transition-transform hover:scale-110"
           >
             Lessons
@@ -31,7 +31,7 @@ const Navbar = () => {
         {/* Right: profile link aligned to the right */}
         <div className="flex justify-end">
           <Link 
-            href="/" 
+            href="/profile" 
             className="text-black text-lg transition-transform hover:scale-110"
           >
             Profile

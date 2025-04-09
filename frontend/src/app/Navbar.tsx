@@ -6,7 +6,14 @@ const Navbar = () => {
     <nav className="bg-gray-300 p-4 shadow-md">
       <div className="grid grid-cols-3 items-center">
         {/* Left placeholder */}
-        <div></div>
+        <div className="flex justify-start">
+            <Link 
+                href="/" 
+                className="text-black font-bold text-2xl transition-transform hover:scale-110"
+            >
+                Trackpad
+            </Link>
+        </div>
         {/* Center: the main links */}
         <div className="flex gap-10 justify-center">
           <Link 

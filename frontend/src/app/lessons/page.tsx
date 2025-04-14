@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Navbar from '../Navbar'
 import { Calendar, dateFnsLocalizer, View, NavigateAction } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addDays } from 'date-fns'
@@ -19,58 +19,53 @@ const localizer = dateFnsLocalizer({
   locales,
 })
 
-// Helper function to create a Date object for the current week
-// const getDateForDay = (dayName: string, timeStr: string) => {
-//   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-//   const today = new Date()
-//   const dayIndex = days.indexOf(dayName)
-//   const currentDayIndex = today.getDay()
-//   const diff = dayIndex - currentDayIndex
-  
-//   const date = new Date(today)
-//   date.setDate(today.getDate() + diff)
-  
-//   const [time, meridiem] = timeStr.split(' ')
-//   const [hours, minutes] = time.split(':').map(Number)
-//   let adjustedHours = hours
-//   if (meridiem === 'PM' && hours !== 12) adjustedHours += 12
-//   if (meridiem === 'AM' && hours === 12) adjustedHours = 0
-  
-//   date.setHours(adjustedHours, minutes, 0, 0)
-//   return date
-// }
+interface Lesson {
+  id: number
+  instructor: number
+  student: number
+  date: string
+  start_time: string
+  end_time: string
+  notes: string
+  student_name: string
+  instructor_name: string
+}
 
-const lessons = [
-  { name: 'Sarah Johnson', subject: 'Piano', day: 'Mon', start: '3:00 PM', end: '4:00 PM' },
-  { name: 'Michael Chen', subject: 'Piano', day: 'Tue', start: '4:30 PM', end: '5:30 PM' },
-  { name: 'Emma Wilson', subject: 'Piano', day: 'Wed', start: '2:00 PM', end: '3:00 PM' },
-  { name: 'Michael Chen', subject: 'Piano', day: 'Wed', start: '4:00 PM', end: '5:00 PM' },
-  { name: 'David Kim', subject: 'Piano', day: 'Thu', start: '5:00 PM', end: '6:00 PM' },
-  { name: 'Lisa Rodriguez', subject: 'Rubik\'s Cube', day: 'Fri', start: '3:30 PM', end: '4:30 PM' },
-]
-
-const ListView = () => {
-  // Group lessons by day
-  const lessonsByDay = lessons.reduce<Record<string, typeof lessons>>((acc, lesson) => {
-    if (!acc[lesson.day]) {
-      acc[lesson.day] = []
+const ListView = ({ lessons }: { lessons: Lesson[] }) => {
+  // Group lessons by date
+  const lessonsByDate = lessons.reduce<Record<string, Lesson[]>>((acc, lesson) => {
+    const date = new Date(lesson.date).toLocaleDateString('en-US', { 
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+    if (!acc[date]) {
+      acc[date] = []
     }
-    acc[lesson.day].push(lesson)
+    acc[date].push(lesson)
     return acc
   }, {})
 
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':')
+    const hour = parseInt(hours)
+    const period = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour % 12 || 12
+    return `${displayHour}:${minutes} ${period}`
+  }
+
   return (
     <div className="space-y-8">
-      {Object.entries(lessonsByDay).map(([day, dayLessons]) => (
-        <div key={day}>
-          <h2 className="text-xl font-bold mb-4">{day}</h2>
+      {Object.entries(lessonsByDate).map(([date, dayLessons]) => (
+        <div key={date}>
+          <h2 className="text-xl font-bold mb-4">{date}</h2>
           <hr className="border-gray-700 mb-4" />
           <div className="space-y-4">
-            {dayLessons.map((lesson, index) => (
-              <div key={index} className="flex">
-                <span className="w-48">{lesson.start.toLowerCase().replace(' ', '')}-{lesson.end.toLowerCase().replace(' ', '')}</span>
-                <span className="w-48">{lesson.name}</span>
-                <span>{lesson.subject}</span>
+            {dayLessons.map((lesson) => (
+              <div key={lesson.id} className="flex">
+                <span className="w-48">{formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}</span>
+                <span className="w-48">{lesson.student_name}</span>
+                <span>{lesson.notes || 'No notes'}</span>
               </div>
             ))}
           </div>
@@ -80,42 +75,30 @@ const ListView = () => {
   )
 }
 
-const CalendarView = () => {
+const CalendarView = ({ lessons }: { lessons: Lesson[] }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const calculateEvents = () => {
-    const weekStart = startOfWeek(currentDate)
     return lessons.map(lesson => {
-      const dayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(lesson.day)
-      const date = addDays(weekStart, dayIndex)
-      
-      const [startTime, startMeridiem] = lesson.start.split(' ')
-      const [startHours, startMinutes] = startTime.split(':').map(Number)
-      let adjustedStartHours = startHours
-      if (startMeridiem === 'PM' && startHours !== 12) adjustedStartHours += 12
-      if (startMeridiem === 'AM' && startHours === 12) adjustedStartHours = 0
-      
-      const [endTime, endMeridiem] = lesson.end.split(' ')
-      const [endHours, endMinutes] = endTime.split(':').map(Number)
-      let adjustedEndHours = endHours
-      if (endMeridiem === 'PM' && endHours !== 12) adjustedEndHours += 12
-      if (endMeridiem === 'AM' && endHours === 12) adjustedEndHours = 0
+      const date = new Date(lesson.date)
+      const [startHours, startMinutes] = lesson.start_time.split(':').map(Number)
+      const [endHours, endMinutes] = lesson.end_time.split(':').map(Number)
       
       const start = new Date(date)
-      start.setHours(adjustedStartHours, startMinutes, 0, 0)
+      start.setHours(startHours, startMinutes, 0, 0)
       
       const end = new Date(date)
-      end.setHours(adjustedEndHours, endMinutes, 0, 0)
+      end.setHours(endHours, endMinutes, 0, 0)
       
       return {
-        title: `${lesson.name}, ${lesson.subject}`,
+        title: `${lesson.student_name}${lesson.notes ? ` - ${lesson.notes}` : ''}`,
         start,
         end,
       }
     })
   }
 
-  const events = useMemo(calculateEvents, [currentDate])
+  const events = useMemo(calculateEvents, [lessons])
 
   const handleNavigate = (newDate: Date, view: View, action: NavigateAction) => {
     setCurrentDate(newDate)
@@ -130,8 +113,8 @@ const CalendarView = () => {
         endAccessor="end"
         defaultView="week"
         views={['week']}
-        min={new Date(0, 0, 0, 0, 0, 0)} // 9:00 AM
-        max={new Date(0, 0, 0, 23.9999, 0, 0)} // 9:00 PM
+        min={new Date(0, 0, 0, 0, 0, 0)}
+        max={new Date(0, 0, 0, 23.9999, 0, 0)}
         date={currentDate}
         onNavigate={handleNavigate}
         formats={{
@@ -147,6 +130,32 @@ const CalendarView = () => {
 
 const Page = () => {
   const [activeView, setActiveView] = useState<'list' | 'calendar'>('list')
+  const [lessons, setLessons] = useState<Lesson[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/lessons/?instructor_id=1')
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setLessons(data)
+        setError(null)
+      } catch (error) {
+        console.error('Error fetching lessons:', error)
+        setError(`Failed to load data: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLessons()
+  }, [])
 
   return (
     <div className="min-h-screen text-white">
@@ -167,11 +176,25 @@ const Page = () => {
             >
               Calendar View
             </button>
-            <button className="px-4 py-1 border border-gray-600 rounded">Edit</button>
+            <button className="px-4 py-1 border border-gray-600 rounded">Add Lesson</button>
           </div>
         </div>
 
-        {activeView === 'list' ? <ListView /> : <CalendarView />}
+        {loading ? (
+          <div>Loading...</div>
+        ) : error ? (
+          <div className="text-red-500">
+            {error}
+            <button 
+              onClick={() => window.location.reload()} 
+              className="ml-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          activeView === 'list' ? <ListView lessons={lessons} /> : <CalendarView lessons={lessons} />
+        )}
       </div>
     </div>
   )

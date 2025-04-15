@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import Navbar from '../Navbar'
 import { Calendar, dateFnsLocalizer, View, NavigateAction } from 'react-big-calendar'
-import { format, parse, startOfWeek, getDay, addDays } from 'date-fns'
+import { format, parse, startOfWeek, getDay, addDays, isSameWeek } from 'date-fns'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import './calendar.css'
 
@@ -19,30 +19,31 @@ const localizer = dateFnsLocalizer({
   locales,
 })
 
-interface Lesson {
+interface RecurringLesson {
   id: number
-  instructor: number
-  student: number
-  date: string
+  instructor_id: number
+  student_id: number
+  student_name: string
+  day_of_week: string
   start_time: string
   end_time: string
-  notes: string
-  student_name: string
-  instructor_name: string
 }
 
-const ListView = ({ lessons }: { lessons: Lesson[] }) => {
-  // Group lessons by date
-  const lessonsByDate = lessons.reduce<Record<string, Lesson[]>>((acc, lesson) => {
-    const date = new Date(lesson.date).toLocaleDateString('en-US', { 
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
-    if (!acc[date]) {
-      acc[date] = []
+const ListView = ({ 
+  lessons, 
+  currentDate,
+  setCurrentDate 
+}: { 
+  lessons: RecurringLesson[], 
+  currentDate: Date,
+  setCurrentDate: (date: Date) => void 
+}) => {
+  // Group lessons by day
+  const lessonsByDay = lessons.reduce<Record<string, RecurringLesson[]>>((acc, lesson) => {
+    if (!acc[lesson.day_of_week]) {
+      acc[lesson.day_of_week] = []
     }
-    acc[date].push(lesson)
+    acc[lesson.day_of_week].push(lesson)
     return acc
   }, {})
 
@@ -54,18 +55,56 @@ const ListView = ({ lessons }: { lessons: Lesson[] }) => {
     return `${displayHour}:${minutes} ${period}`
   }
 
+  const getDateForDay = (dayOfWeek: string) => {
+    const dayIndex = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].indexOf(dayOfWeek)
+    const weekStart = startOfWeek(currentDate)
+    const date = addDays(weekStart, dayIndex)
+    return format(date, 'EEEE, MMMM d')
+  }
+
+  const handlePreviousWeek = () => {
+    setCurrentDate(addDays(currentDate, -7))
+  }
+
+  const handleNextWeek = () => {
+    setCurrentDate(addDays(currentDate, 7))
+  }
+
+  const handleToday = () => {
+    setCurrentDate(new Date())
+  }
+
   return (
     <div className="space-y-8">
-      {Object.entries(lessonsByDate).map(([date, dayLessons]) => (
-        <div key={date}>
-          <h2 className="text-xl font-bold mb-4">{date}</h2>
+      <div className="flex justify-between items-center mb-4">
+        <button 
+          onClick={handlePreviousWeek}
+          className="px-4 py-2 border border-gray-600 rounded hover:bg-gray-800 transition-colors"
+        >
+          Previous Week
+        </button>
+        <button 
+          onClick={handleToday}
+          className="px-4 py-2 border border-gray-600 rounded hover:bg-gray-800 transition-colors"
+        >
+          Today
+        </button>
+        <button 
+          onClick={handleNextWeek}
+          className="px-4 py-2 border border-gray-600 rounded hover:bg-gray-800 transition-colors"
+        >
+          Next Week
+        </button>
+      </div>
+      {Object.entries(lessonsByDay).map(([day, dayLessons]) => (
+        <div key={day}>
+          <h2 className="text-xl font-bold mb-4">{getDateForDay(day)}</h2>
           <hr className="border-gray-700 mb-4" />
           <div className="space-y-4">
             {dayLessons.map((lesson) => (
               <div key={lesson.id} className="flex">
                 <span className="w-48">{formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}</span>
                 <span className="w-48">{lesson.student_name}</span>
-                <span>{lesson.notes || 'No notes'}</span>
               </div>
             ))}
           </div>
@@ -75,12 +114,21 @@ const ListView = ({ lessons }: { lessons: Lesson[] }) => {
   )
 }
 
-const CalendarView = ({ lessons }: { lessons: Lesson[] }) => {
-  const [currentDate, setCurrentDate] = useState(new Date())
-
+const CalendarView = ({ 
+  lessons, 
+  currentDate,
+  setCurrentDate 
+}: { 
+  lessons: RecurringLesson[], 
+  currentDate: Date,
+  setCurrentDate: (date: Date) => void 
+}) => {
   const calculateEvents = () => {
+    const weekStart = startOfWeek(currentDate)
     return lessons.map(lesson => {
-      const date = new Date(lesson.date)
+      const dayIndex = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].indexOf(lesson.day_of_week)
+      const date = addDays(weekStart, dayIndex)
+      
       const [startHours, startMinutes] = lesson.start_time.split(':').map(Number)
       const [endHours, endMinutes] = lesson.end_time.split(':').map(Number)
       
@@ -91,14 +139,14 @@ const CalendarView = ({ lessons }: { lessons: Lesson[] }) => {
       end.setHours(endHours, endMinutes, 0, 0)
       
       return {
-        title: `${lesson.student_name}${lesson.notes ? ` - ${lesson.notes}` : ''}`,
+        title: lesson.student_name,
         start,
         end,
       }
     })
   }
 
-  const events = useMemo(calculateEvents, [lessons])
+  const events = useMemo(calculateEvents, [lessons, currentDate])
 
   const handleNavigate = (newDate: Date, view: View, action: NavigateAction) => {
     setCurrentDate(newDate)
@@ -130,14 +178,15 @@ const CalendarView = ({ lessons }: { lessons: Lesson[] }) => {
 
 const Page = () => {
   const [activeView, setActiveView] = useState<'list' | 'calendar'>('list')
-  const [lessons, setLessons] = useState<Lesson[]>([])
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [lessons, setLessons] = useState<RecurringLesson[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchLessons = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/lessons/?instructor_id=1')
+        const response = await fetch('http://localhost:8000/api/instructor-student-relations/?instructor_id=1')
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -193,7 +242,17 @@ const Page = () => {
             </button>
           </div>
         ) : (
-          activeView === 'list' ? <ListView lessons={lessons} /> : <CalendarView lessons={lessons} />
+          activeView === 'list' ? 
+            <ListView 
+              lessons={lessons} 
+              currentDate={currentDate} 
+              setCurrentDate={setCurrentDate} 
+            /> : 
+            <CalendarView 
+              lessons={lessons} 
+              currentDate={currentDate} 
+              setCurrentDate={setCurrentDate} 
+            />
         )}
       </div>
     </div>

@@ -55,3 +55,9 @@ class InstructorSubjectRelationViewSet(viewsets.ModelViewSet):
 class LessonViewSet(viewsets.ModelViewSet):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+
+    def get_queryset(self):
+        instructor_id = self.request.query_params.get('instructor_id', None)
+        if instructor_id:
+            return Lesson.objects.filter(instructor_id=instructor_id)
+        return super().get_queryset()

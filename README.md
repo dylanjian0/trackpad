@@ -374,13 +374,8 @@ python create_test_data.py
 
 - [ ] Real-time messaging system with WebSockets
 - [ ] Advanced analytics dashboard
-- [ ] Email notifications for upcoming lessons
-- [ ] Payment integration for billing
 - [ ] Mobile application (React Native)
 - [ ] Multi-language support (i18n)
-- [ ] User authentication and authorization
-- [ ] File uploads for lesson materials
-- [ ] Automated testing (Jest, Pytest)
 - [ ] CI/CD pipeline with GitHub Actions
 
 ---
@@ -427,18 +422,6 @@ This project demonstrates proficiency in:
 
 ---
 
-## 📝 Code Quality
-
-- **Type Safety**: TypeScript interfaces for all data structures
-- **Component Reusability**: DRY principles throughout
-- **Error Handling**: Try-catch blocks with user-friendly messages
-- **Loading States**: Proper UX during async operations
-- **Code Comments**: Clear documentation where needed
-- **Consistent Naming**: Semantic, descriptive variable names
-- **Git Practices**: Meaningful commits and version control
-
----
-
 ## 👨‍💻 Developer
 
 **Dylan Jian**
@@ -452,25 +435,3 @@ This project showcases my ability to:
 - Manage complex data relationships
 - Write clean, maintainable code
 - Deploy scalable web applications
-
----
-
-## 📄 License
-
-This project is available for review and demonstration purposes.
-
----
-
-## 🙏 Acknowledgments
-
-Built with modern web technologies and best practices to demonstrate full-stack development capabilities for enterprise-level applications.
-
----
-
-<div align="center">
-
-**Built with ❤️ using Next.js, React, Django, and PostgreSQL**
-
-[View Demo](#) • [Report Bug](#) • [Request Feature](#)
-
-</div>
